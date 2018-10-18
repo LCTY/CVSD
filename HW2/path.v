@@ -29,7 +29,7 @@ reg [4-1:0] counter;
 assign write_i = (bypass || (valid1_i && !stop1_o) || (valid2_i && !stop2_o)) ? 1'b1 : 1'b0;
 assign valid_i = (valid1_i || valid2_i) ? 1'b1 : 1'b0;
 assign bypass = (empty && gnt_i && valid_i) ? 1'b1 : 1'b0;
-assign read_i = (bypass || (gnt_i && !empty)) ? 1'b1 : 1'b0;
+assign read_i = (bypass || (gnt_i && !empty)) ? 1'b1 : 1'b0;	// TODO: read_i == 1 when empty == 1 <-- this situation should not exist
 //assign valid_o = (read_i) ? 1'b1 : 1'b0;
 //assign data_o = (bypass) ? data_i_bypass : fifo_o;
 assign data_o = fifo_o;

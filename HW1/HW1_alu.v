@@ -1,0 +1,71 @@
+module alu(
+             clk_p_i,
+             reset_n_i,
+             data_a_i,
+             data_b_i,
+             inst_i,
+             data_o
+             );
+  /* ============================================ */
+      input           clk_p_i;
+      input           reset_n_i;
+      input   [7:0]   data_a_i;
+      input   [7:0]   data_b_i;
+      input   [2:0]   inst_i;
+
+      output reg [15:0]  data_o;
+
+      reg     [15:0]   ALU_d2_w;
+      reg     [7:0]    data_a_d1_r;
+      reg     [7:0]    data_b_d1_r;
+      reg     [2:0]    inst_d1_r;
+	  
+	  reg [8-1:0] dff_a_d1_r;
+	  reg [8-1:0] dff_b_d1_r;
+	  reg [3-1:0] dff_inst_d1_r;
+	  reg [16-1:0] dff_data_d2_r;
+
+  /* ============================================ */
+      always@ (*)
+      begin
+          case(inst_i)
+            3'b000:    ALU_d2_w = {8{data_a_i[7]}, data_a_i} + {8{data_b_i[7]}, data_b_i};   // Signed Addition
+            3'b001:    ALU_d2_w = {8{data_a_i[7]}, data_a_i} - {8{data_b_i[7]}, data_b_i};   // Signed Subtraction
+            3'b010:    ALU_d2_w = data_a_i * data_b_i;   // Unsigned Multiplication
+            3'b011:    ALU_d2_w = {8{data_a_i[7]}, data_a_i} & {8{data_b_i[7]}, data_b_i};   // Unsigned AND
+            3'b100:    ALU_d2_w = {8{data_a_i[7]}, data_a_i} ^ {8{data_b_i[7]}, data_b_i};   // Unsigned XOR
+            3'b101:                                      // Signed Absolute Value
+                begin
+                    if(data_a_i[7] == 0)
+                        ALU_d2_w = {8{data_a_i[7]}, data_a_i};
+                    else
+                        ALU_d2_w = {8{1'b0}, ~data_a_i + 1'b1};
+                end
+            3'b110:    ALU_d2_w = {{8{data_a_i[7]}, data_a_i} + {8{data_b_i[7]}, data_b_i}} >> 1;   // Unsigned Addition & Divide by 2
+            3'b111:    ALU_d2_w = {8{data_a_i[7]}, data_a_i} % {8{data_b_i[7]}, data_b_i};   // Unsigned Mod
+            default:   ALU_d2_w = 16'd0;
+          endcase
+      end
+
+  /* ============================================ */
+      always@(posedge clk_p_i or negedge reset_n_i)
+      begin
+          if (reset_n_i == 1'b0) begin
+			dff_a_d1_r <= 0;
+			dff_b_d1_r <= 0;
+			dff_inst_d1_r <= 0;
+			dff_data_d2_r <= 0;
+            data_o <= 0;
+          end
+          else begin
+			dff_a_d1_r <= data_a_i;
+			dff_b_d1_r <= data_b_i;
+			dff_inst_d1_r <= inst_i;
+			dff_data_d2_r <= ALU_d2_w;
+            data_o <= dff_data_d2_r;
+          end
+      end
+  /* ============================================ */
+
+endmodule
+

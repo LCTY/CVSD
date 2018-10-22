@@ -4,11 +4,10 @@
 `define PAT1		"./pattern1.dat" // Master1 output data   
 `define PAT2		"./pattern2.dat" // Master2 output data
 `define EXP			"./golden1.dat"   // Memory stored data (ground truth), is used to verified your designed
-`define TIME_OUT	20000
+`define TIME_OUT	6000000
 
-module tb_single;
+module tb_mega;
 	parameter PAT_NUM = 100;
-	parameter K_M1 = 0, K_M2 = 0, K_MEM = 0;
 
 	// Inputs
 	reg clk;
@@ -68,66 +67,78 @@ module tb_single;
 
 	initial begin
 		$fsdbDumpfile("tb.fsdb");
-		$fsdbDumpvars(0,tb_single,"+mda");
+		$fsdbDumpvars(0,tb_mega,"+mda");
 		
 		$readmemb(`PAT1, pattern1);
 		$readmemb(`PAT2, pattern2);
 		$readmemb(`EXP, golden);
 		
-		clk = 1;
-		rst_n = 0;
-		data1_i = 0; data1_i_d = 0;
-		data2_i = 0; data2_i_d = 0;
-		valid1_i = 0; valid1_i_d = 0;
-		valid2_i = 0; valid2_i_d = 0;
-		gnt_i = 0; gnt_i_d = 0;
-		mem_cnt = 0;
-		i = 0; j = 0; k = 0;
-		
-		#(`H_CYCLE*5) rst_n = 1;
-		
-		while (mem_cnt < (PAT_NUM*2)) begin
-			// Master1
-			if ((i < PAT_NUM) && stop1_o == 0 && (k >= K_M1)) begin
-				valid1_i_d = 1;
-				data1_i_d = pattern1[i];
-				i = i + 1;
+		for (k3=0; k3<1; k3=k3+1) begin
+		for (k2=0; k2<1; k2=k2+1) begin
+		for (k1=0; k1<1; k1=k1+1) begin
+			clk = 1;
+			rst_n = 0;
+			data1_i = 0; data1_i_d = 0;
+			data2_i = 0; data2_i_d = 0;
+			valid1_i = 0; valid1_i_d = 0;
+			valid2_i = 0; valid2_i_d = 0;
+			gnt_i = 0; gnt_i_d = 0;
+			mem_cnt = 0;
+			i = 0; j = 0; k = 0;
+			
+			#(`H_CYCLE*5) rst_n = 1; clk = 1;
+			
+			while (mem_cnt < (PAT_NUM*2)) begin
+				// Master1
+				if ((i < PAT_NUM) && stop1_o == 0 && (k >= k1)) begin
+					valid1_i_d = 1;
+					data1_i_d = pattern1[i];
+					i = i + 1;
+				end
+				else begin
+					valid1_i_d = 0;
+				end
+				
+				// Master2
+				if ((j < PAT_NUM) && stop2_o == 0 && (k > k2)) begin
+					valid2_i_d = 1;
+					data2_i_d = pattern2[j];
+					j = j + 1;
+				end
+				else begin
+					valid2_i_d = 0;
+				end
+				
+				// Memory
+				if (req_o && (k > k3))
+					gnt_i_d = 1;
+				else
+					gnt_i_d = 0;
+				
+				
+				if (k < 9)
+					k = k + 1;
+				else
+					k = 0;
+				
+				
+				#(`CYCLE);
 			end
-			else begin
-				valid1_i_d = 0;
+			
+			for (i=0; i<(PAT_NUM*2); i=i+1) begin
+				/*
+				if (golden[i] == mem[i])
+					$display("[Correct] i=%d, mem=%d, golden=%d",i,mem[i],golden[i]);
+				else
+					$display("[Error] i=%d, mem=%d, golden=%d",i,mem[i],golden[i]);
+				*/
+				if (golden[i] !== mem[i]) begin
+					$display("[Error] k1:%d, i=%d, mem=%d, golden=%d",k1,i,mem[i],golden[i]);
+				end
+				
 			end
-			
-			// Master2
-			if ((j < PAT_NUM) && stop2_o == 0 && (k > K_M2)) begin
-				valid2_i_d = 1;
-				data2_i_d = pattern2[j];
-				j = j + 1;
-			end
-			else begin
-				valid2_i_d = 0;
-			end
-			
-			// Memory
-			if (req_o && (k > K_MEM))
-				gnt_i_d = 1;
-			else
-				gnt_i_d = 0;
-			
-			
-			if (k < 9)
-				k = k + 1;
-			else
-				k = 0;
-			
-			
-			#(`CYCLE);
 		end
-		
-		for (i=0; i<(PAT_NUM*2); i=i+1) begin
-			if (golden[i] == mem[i])
-				$display("[Correct] i=%d, mem=%d, golden=%d",i,mem[i],golden[i]);
-			else
-				$display("[Error] i=%d, mem=%d, golden=%d",i,mem[i],golden[i]);
+		end
 		end
 		
 		$finish;

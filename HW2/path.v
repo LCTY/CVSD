@@ -12,7 +12,7 @@ input gnt_i;
 output reg req_o;
 output reg stop1_o;
 output reg stop2_o;
-output [DWIDTH-1:0] data_o;
+output reg [DWIDTH-1:0] data_o;
 output reg valid_o;
 
 
@@ -26,13 +26,10 @@ reg [DWIDTH-1:0] data_i, data_i_bypass;
 reg select;
 reg [4-1:0] counter;
 
-assign write_i = (bypass || (valid1_i && !stop1_o) || (valid2_i && !stop2_o)) ? 1'b1 : 1'b0;
+assign write_i = (!bypass && ((valid1_i && !stop1_o) || (valid2_i && !stop2_o))) ? 1'b1 : 1'b0;
+assign read_i = (gnt_i && !empty) ? 1'b1 : 1'b0;
 assign valid_i = (valid1_i || valid2_i) ? 1'b1 : 1'b0;
 assign bypass = (empty && gnt_i && valid_i) ? 1'b1 : 1'b0;
-assign read_i = (bypass || (gnt_i && !empty)) ? 1'b1 : 1'b0;	// TODO: read_i == 1 when empty == 1 <-- this situation should not exist
-//assign valid_o = (read_i) ? 1'b1 : 1'b0;
-//assign data_o = (bypass) ? data_i_bypass : fifo_o;
-assign data_o = fifo_o;
 
 always@(*) begin
 	if (select == 1'b0) begin	// Master 1
@@ -84,20 +81,8 @@ always @(posedge clk, negedge rst_n)	begin
 		
 		data_i_bypass <= data_i;
 		
-		//if (bypass) data_o <= data_i;
-		//else data_o <= fifo_o;
-		
-		//if (((valid1_i && !stop1_o) || (valid2_i && !stop2_o)) && !bypass) write_i <= 1'b1;
-		//else write_i <= 0;
-		
-		//if (gnt_i && !empty) read_i <= 1'b1;
-		//else read_i <= 0;
-		
-		//if (valid1_i || valid2_i) valid_i <= 1'b1;
-		//else valid_i <= 0;
-		
-		//if (empty && gnt_i && valid_i) bypass <= 1'b1;
-		//else bypass <= 0;
+		if (bypass) data_o <= data_i;
+		else data_o <= fifo_o;
 	end
 end
 
